@@ -36,6 +36,8 @@
 
 #include <WiFi.h>
 #include <WebServer.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 
 // ─────────────────────────────────────────────
 //  CONFIGURAÇÕES — altere aqui
@@ -51,6 +53,9 @@ const int PINOS_LED[4]  = {27, 26, 25, 23};
 // false → relé ativo em HIGH
 const bool RELE_ATIVO_LOW = true;
 // ─────────────────────────────────────────────
+// Biblioteca Marco Schwartz (pinagem padrão da maioria dos módulos I2C PCF8574)
+LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+
 
 WebServer server(80);
 bool estadoRele[4] = {false, false, false, false};
@@ -467,9 +472,23 @@ void aplicarRele(int id) {
 
   // Acende o LED quando o relé estiver ligado
   digitalWrite(PINOS_LED[id], ligado ? HIGH : LOW);
+  
+  atualizarLCDRele();
 }
 
-
+void atualizarLCDRele() {
+  lcd.setCursor(0, 1);
+  String linha = "";
+  for (int i = 0; i < 4; i++) {
+    linha += String(i + 1);
+    linha += ":";
+    linha += estadoRele[i] ? "L" : "D";
+    if (i < 3) linha += " ";
+  }
+  // completa com espaços até 16 caracteres (apaga sobras)
+  while (linha.length() < 16) linha += " ";
+  lcd.print(linha);
+}
 // ─── Rotas HTTP ───────────────────────────────
 void handleRoot() {
   server.send(200, "text/html; charset=utf-8", montarHTML());
@@ -502,7 +521,7 @@ void handleStatus() {
   String json = "{\"estados\":[";
   for (int i = 0; i < 4; i++) {
     json += estadoRele[i] ? "true" : "false";
-    if (i < 2) json += ",";
+    if (i < 3) json += ",";
   }
   json += "]}";
   server.send(200, "application/json", json);
@@ -512,7 +531,15 @@ void handleStatus() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n=== ESP8266 — Painel 3 Relés (sincronizado) ===");
+  Serial.println("\n\n=== ESP8266 — Painel 4 Relés (sincronizado) ===");
+
+  // ── LCD ──
+    Wire.begin(21, 22);
+    lcd.begin(16, 2);
+    lcd.setBacklight(HIGH);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Conectando WiFi");
 
   for (int i = 0; i < 4; i++) {
     pinMode(PINOS_RELE[i], OUTPUT);
@@ -535,6 +562,12 @@ void setup() {
   Serial.println("\nConectado!");
   Serial.print("Acesse no navegador: http://");
   Serial.println(WiFi.localIP());
+
+    // ── Mostra o IP na linha 1 do LCD ──
+  lcd.setCursor(0, 0);
+  lcd.print("                ");          // limpa a linha
+  lcd.setCursor(0, 0);
+  lcd.print(WiFi.localIP().toString());   // ex: 192.168.0.105
 
   server.on("/",         handleRoot);
   server.on("/toggle/0", handleToggle);
