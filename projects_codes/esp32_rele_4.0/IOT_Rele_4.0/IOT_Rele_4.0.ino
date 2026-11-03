@@ -42,8 +42,8 @@
 // ─────────────────────────────────────────────
 //  CONFIGURAÇÕES — altere aqui
 // ─────────────────────────────────────────────
-const char* ssid     = "LIVE TIM_8AB0_5G";  //TP-Link_425A
-const char* password = "36tp7hba6h"; // =Ev$fL+7
+const char* ssid     = "LIVE TIM_8AB0_5G";  //TP-Link_149A
+const char* password = "36tp7hba6h"; // 7Hmz?i5D
 
 // Pinos dos relés (NodeMCU)
 const int PINOS_RELE[4] = {4, 5, 18, 19};
